@@ -1,5 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
+import time
+from selenium import webdriver
+from selenium.webdriver.common.keys import Keys
 
 # Xbox = xbox
 # Battle.net = battle
@@ -103,3 +106,30 @@ def getMedianTeamKDMatch(match):
     j = r.json()
 
     return j['matchStatData']['teamMedian']
+
+def getLobbyStats(match):
+    driver = webdriver.Chrome('./chromedriver.exe')
+    driver.get('https://wzstats.gg/match/' + match)
+    time.sleep(10)
+    source = driver.page_source
+    driver.close()
+
+    soup = BeautifulSoup(source, 'html.parser')
+    entries = soup.find_all('div', {'class':'team-container'})
+
+    total = []
+
+    for e in entries:
+        container = e.find('div', {'class':'team-players-info-container table-cell'})
+        players = container.find_all('div', {'class':'team-players-info-table'})[1:]
+        for p in players:
+            stats = p.find_all('div', {'class':'team-players-info-cell'})
+            kills = stats[0].find('div', {'class':'stat-value'}).text.strip()
+            kd = stats[1].find('div', {'class':'stat-value'}).text.strip()
+            dmg = stats[2].find('div', {'class':'stat-value'}).text.strip()
+            deaths = stats[3].text.strip()
+            headshot = stats[4].text.strip()
+            result = {'ID': match, 'Kills': kills, 'KD': kd, 'DMG': dmg, 'Deaths': deaths, 'Headshot': headshot}
+            total.append(result)
+
+    return total
