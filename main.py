@@ -1,4 +1,4 @@
-from csv import reader
+from csv import writer, reader
 from utils import wzstats as wz
 
 tasks = []
@@ -12,7 +12,22 @@ with open('./config/accounts.csv', 'r') as read:
             tasks.append((row[0], row[1]))
 
 for t in tasks:
-    matches = wz.getLast20Matches(t[0], t[1])
-    
-    # Compute data using functions from wzstats.py and write them to a new csv. We will then import that CSV to do analysis.
+    name = t[0]
+    plat = t[1]
+    kd = wz.getKD(name, plat)
+    winpct = wz.getWinPct(name, plat)
+    wins = wz.getWins(name, plat)
+    kills = wz.getKills(name, plat)
+    killsPerGame = wz.getKillsPerGame(name, plat)
+    gulagLast100 = wz.getGulagLast100(name, plat)
+    hsLast100 = wz.getHSLast100(name, plat)
+    kdLast100 = wz.getKDLast100(name, plat)
+    gameIDs = wz.getLast20Matches(name, plat)
+    gameIDs = ";".join(gameIDs)
 
+    result = [name, plat, kd, winpct, wins, kills, killsPerGame, gulagLast100, hsLast100, kdLast100, gameIDs]
+
+    with open('./dataset/users.csv', 'a', newline='') as f:
+        _writer = writer(f)
+        _writer.writerow(result)
+        f.close()
