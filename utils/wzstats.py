@@ -22,6 +22,18 @@ def getKD(user, platform):
 
     return r.json()['data']['lifetime']['mode']['br']['properties']['kdRatio']
 
+def getWins(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player', params=params)
+
+    j = r.json()
+
+    return j['data']['lifetime']['mode']['br']['properties']['wins']
+
 def getWinPct(user, platform):
     params = {
         'username': user,
@@ -34,6 +46,18 @@ def getWinPct(user, platform):
 
     return ((j['data']['lifetime']['mode']['br']['properties']['wins'] / j['data']['lifetime']['mode']['br']['properties']['gamesPlayed']) * 100)
 
+def getKills(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player', params=params)
+
+    j = r.json()
+
+    return j['data']['lifetime']['mode']['br']['properties']['kills']
+
 def getKillsPerGame(user, platform):
     params = {
         'username': user,
@@ -45,6 +69,42 @@ def getKillsPerGame(user, platform):
     j = r.json()
 
     return (j['data']['lifetime']['mode']['br']['properties']['kills'] / j['data']['lifetime']['mode']['br']['properties']['gamesPlayed'])
+
+def getGulagLast100(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player', params=params)
+
+    j = r.json()
+
+    return j['last100games']['gulagWinPercentage']
+
+def getHSLast100(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player', params=params)
+
+    j = r.json()
+
+    return (j['last100games']['headshots'] / j['last100games']['kills'])
+
+def getKDLast100(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player', params=params)
+
+    j = r.json()
+
+    return (j['last100games']['kills'] / j['last100games']['deaths'])
 
 def getLast20Matches(user, platform):
     params = {
