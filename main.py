@@ -1,5 +1,6 @@
 from csv import writer, reader
 from utils import wzstats as wz
+import pandas as pd
 
 tasks = []
 
@@ -31,3 +32,6 @@ for t in tasks:
         _writer = writer(f)
         _writer.writerow(result)
         f.close()
+
+df = pd.read_csv('./dataset/users.csv')
+df['game']
