@@ -168,8 +168,8 @@ def getMedianTeamKDMatch(match):
     return j['matchStatData']['teamMedian']
 
 def getLobbyStats(match):
-    # driver = webdriver.Chrome('./chromedriver.exe')
-    driver = webdriver.Chrome('/Users/sandeep/Workspace/chromedriver')
+    driver = webdriver.Chrome('./chromedriver.exe')
+    # driver = webdriver.Chrome('/Users/sandeep/Workspace/chromedriver')
     driver.get('https://wzstats.gg/match/' + match)
     time.sleep(10)
     source = driver.page_source
