@@ -32,6 +32,3 @@ for t in tasks:
         _writer = writer(f)
         _writer.writerow(result)
         f.close()
-
-df = pd.read_csv('./dataset/users.csv')
-df['game']
