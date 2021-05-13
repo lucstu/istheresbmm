@@ -167,30 +167,71 @@ def getMedianTeamKDMatch(match):
 
     return j['matchStatData']['teamMedian']
 
+# def getLobbyStats(match):
+#     # driver = webdriver.Chrome('./chromedriver.exe')
+#     driver = webdriver.Chrome('/Users/sandeep/Workspace/chromedriver')
+#     driver.get('https://wzstats.gg/match/' + match)
+#     time.sleep(10)
+#     source = driver.page_source
+#     driver.close()
+
+#     soup = BeautifulSoup(source, 'html.parser')
+#     entries = soup.find_all('div', {'class':'team-container'})
+
+#     total = []
+
+#     for e in entries:
+#         container = e.find('div', {'class':'team-players-info-container table-cell'})
+#         players = container.find_all('div', {'class':'team-players-info-table'})[1:]
+#         for p in players:
+#             stats = p.find_all('div', {'class':'team-players-info-cell'})
+#             kills = stats[0].find('div', {'class':'stat-value'}).text.strip()
+#             kd = stats[1].find('div', {'class':'stat-value'}).text.strip()
+#             dmg = stats[2].find('div', {'class':'stat-value'}).text.strip()
+#             deaths = stats[3].text.strip()
+#             headshot = stats[4].text.strip()
+#             result = {'ID': match, 'Kills': kills, 'KD': kd, 'DMG': dmg, 'Deaths': deaths, 'Headshot': headshot}
+#             total.append(result)
+
+#     return total
+
 def getLobbyStats(match):
-    # driver = webdriver.Chrome('./chromedriver.exe')
-    driver = webdriver.Chrome('/Users/sandeep/Workspace/chromedriver')
-    driver.get('https://wzstats.gg/match/' + match)
-    time.sleep(10)
-    source = driver.page_source
-    driver.close()
+    params = {
+        'matchId': match
+    }
 
-    soup = BeautifulSoup(source, 'html.parser')
-    entries = soup.find_all('div', {'class':'team-container'})
+    r = requests.get('https://app.wzstats.gg/v2/', params=params)
 
-    total = []
+    j = r.json()
 
-    for e in entries:
-        container = e.find('div', {'class':'team-players-info-container table-cell'})
-        players = container.find_all('div', {'class':'team-players-info-table'})[1:]
-        for p in players:
-            stats = p.find_all('div', {'class':'team-players-info-cell'})
-            kills = stats[0].find('div', {'class':'stat-value'}).text.strip()
-            kd = stats[1].find('div', {'class':'stat-value'}).text.strip()
-            dmg = stats[2].find('div', {'class':'stat-value'}).text.strip()
-            deaths = stats[3].text.strip()
-            headshot = stats[4].text.strip()
-            result = {'ID': match, 'Kills': kills, 'KD': kd, 'DMG': dmg, 'Deaths': deaths, 'Headshot': headshot}
-            total.append(result)
+    players = j['data']['players']
 
-    return total
+    results = []
+
+    for p in players:
+        stat = p['playerStat']
+        if stat != None:
+            account = ""
+            platform = ""
+
+            if stat['battle'] != None or stat['psn'] != None or stat['xbl'] != None:
+                if stat['battle'] != None:
+                    account = stat['battle']
+                    platform = 'battle'
+                elif stat['psn'] != None:
+                    account = stat['psn']
+                    platform = 'psn'
+                else:
+                    account = stat['xbl']
+                    platform = 'xbl'
+
+            lifetime = stat['lifetime']['mode']['br']['properties']
+            match = p['playerMatchStat']['playerStats']
+
+            results.append({'username':account, 'platform':platform, 'lifetime': lifetime, 'match': match})
+
+        else:
+            print("Account not old enough/no decisive data.")
+
+    return results
+
