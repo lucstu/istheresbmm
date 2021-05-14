@@ -3,6 +3,9 @@ from bs4 import BeautifulSoup
 import time
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
+import csv
+import pandas as pd
+import unidecode
 
 # Xbox = xbox
 # Battle.net = battle
@@ -167,45 +170,25 @@ def getMedianTeamKDMatch(match):
 
     return j['matchStatData']['teamMedian']
 
-# def getLobbyStats(match):
-#     # driver = webdriver.Chrome('./chromedriver.exe')
-#     driver = webdriver.Chrome('/Users/sandeep/Workspace/chromedriver')
-#     driver.get('https://wzstats.gg/match/' + match)
-#     time.sleep(10)
-#     source = driver.page_source
-#     driver.close()
+seen_accounts = []
 
-#     soup = BeautifulSoup(source, 'html.parser')
-#     entries = soup.find_all('div', {'class':'team-container'})
-
-#     total = []
-
-#     for e in entries:
-#         container = e.find('div', {'class':'team-players-info-container table-cell'})
-#         players = container.find_all('div', {'class':'team-players-info-table'})[1:]
-#         for p in players:
-#             stats = p.find_all('div', {'class':'team-players-info-cell'})
-#             kills = stats[0].find('div', {'class':'stat-value'}).text.strip()
-#             kd = stats[1].find('div', {'class':'stat-value'}).text.strip()
-#             dmg = stats[2].find('div', {'class':'stat-value'}).text.strip()
-#             deaths = stats[3].text.strip()
-#             headshot = stats[4].text.strip()
-#             result = {'ID': match, 'Kills': kills, 'KD': kd, 'DMG': dmg, 'Deaths': deaths, 'Headshot': headshot}
-#             total.append(result)
-
-#     return total
-
-def getLobbyStats(match):
+def getLobbyStats(match, unique=False):
     params = {
         'matchId': match
     }
+    try:
+        r = requests.get('https://app.wzstats.gg/v2/', params=params)
+        j = r.json()
+    except:
+        if unique:
+            return [], []
+        return []
 
-    r = requests.get('https://app.wzstats.gg/v2/', params=params)
-
-    j = r.json()
+   
 
     players = j['data']['players']
 
+    unseen_players = []
     results = []
 
     for p in players:
@@ -225,13 +208,50 @@ def getLobbyStats(match):
                     account = stat['xbl']
                     platform = 'xbl'
 
-            lifetime = stat['lifetime']['mode']['br']['properties']
-            match = p['playerMatchStat']['playerStats']
+                if unique and (not account in seen_accounts):
+                    # seen_accounts.append(account)
+                    unseen_players.append({'username': account, 'platform':platform})
 
-            results.append({'username':account, 'platform':platform, 'lifetime': lifetime, 'match': match})
+            lifetime_kd = stat['lifetime']['mode']['br']['properties']['kdRatio']
+
+            results.append({'id':match, 'username':account, 'platform':platform, 'lifetime_kd': lifetime_kd})
 
         else:
             print("Account not old enough/no decisive data.")
+    if unique:
+        return results, unseen_players
 
     return results
 
+def loadAccounts(file_name, n):
+    df = pd.read_csv(file_name)
+
+    queue = []
+
+    for index, account in df.iterrows():
+        if not account["username"] in seen_accounts:
+            queue.append(account)
+
+    for i in range(n):
+        print(i)
+        next_user = queue.pop(0)
+        while next_user["username"] in seen_accounts:
+            next_user = queue.pop(0)
+        seen_accounts.append(next_user['username']) 
+        matches = getLast20Matches(next_user["username"], next_user["platform"])
+
+        for match in matches:
+            match_players, new_players = getLobbyStats(match, unique=True)
+            # print(new_players)
+            queue += new_players
+
+            with open('./dataset/large.csv', 'a', newline='') as csvfile:   
+                writer = csv.writer(csvfile, delimiter=',', quotechar='\'', quoting=csv.QUOTE_MINIMAL)
+
+                for match_player in match_players:
+                    match_player['username'] = unidecode.unidecode(match_player['username'])
+                    line = list(match_player.values())
+                    writer.writerow(line)
+
+
+loadAccounts("./config/accounts.csv", 125)
