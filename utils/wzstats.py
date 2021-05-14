@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 import csv
 import pandas as pd
 import unidecode
+import random
 
 # Xbox = xbox
 # Battle.net = battle
@@ -126,6 +127,23 @@ def getLast20Matches(user, platform):
 
     return matches
 
+def getLastMatch(user, platform):
+    params = {
+        'username': user,
+        'platform': platform
+    }
+
+    r = requests.get('https://app.wzstats.gg/v2/player/match', params=params)
+
+    j = r.json()
+    
+    matches = []
+
+    for m in j:
+        matches.append(m['id'])
+
+    return matches[5]
+
 def getAvgKDMatch(match):
     params = {
         'matchId': match
@@ -171,18 +189,15 @@ def getMedianTeamKDMatch(match):
     return j['matchStatData']['teamMedian']
 
 seen_accounts = []
+seen_matches = []
 
 def getLobbyStats(match, unique=False):
     params = {
         'matchId': match
     }
-    try:
-        r = requests.get('https://app.wzstats.gg/v2/', params=params)
-        j = r.json()
-    except:
-        if unique:
-            return [], []
-        return []
+    
+    r = requests.get('https://app.wzstats.gg/v2/', params=params)
+    j = r.json()
 
    
 
@@ -226,11 +241,11 @@ def getLobbyStats(match, unique=False):
 def loadAccounts(file_name, n):
     df = pd.read_csv(file_name)
 
-    queue = []
+    queue = [{'username': 'NICKMERCS#11526', 'platform': 'battle'}]
 
-    for index, account in df.iterrows():
-        if not account["username"] in seen_accounts:
-            queue.append(account)
+    # for index, account in df.iterrows():
+    #     if not account["username"] in seen_accounts:
+    #         queue.append(account)
 
     for i in range(n):
         print(i)
@@ -239,19 +254,31 @@ def loadAccounts(file_name, n):
             next_user = queue.pop(0)
         seen_accounts.append(next_user['username']) 
         matches = getLast20Matches(next_user["username"], next_user["platform"])
-
+        
         for match in matches:
-            match_players, new_players = getLobbyStats(match, unique=True)
-            # print(new_players)
-            queue += new_players
+            if match in seen_matches:
+                continue
+        # for match in matches:
+            try:
+                match_players, new_players = getLobbyStats(match, unique=True)
+            except:
+                continue
+            
+            try:
+                queue += random.sample(new_players, 2)
+            except:
+                continue
 
-            with open('./dataset/large.csv', 'a', newline='') as csvfile:   
+            seen_matches.append(match)
+
+            with open('./dataset/large_branch.csv', 'a', newline='') as csvfile:   
                 writer = csv.writer(csvfile, delimiter=',', quotechar='\'', quoting=csv.QUOTE_MINIMAL)
 
                 for match_player in match_players:
                     match_player['username'] = unidecode.unidecode(match_player['username'])
                     line = list(match_player.values())
                     writer.writerow(line)
+            break
 
 
-loadAccounts("./config/accounts.csv", 125)
+loadAccounts("./config/accounts.csv", 2048)
