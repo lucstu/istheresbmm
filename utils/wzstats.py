@@ -280,5 +280,9 @@ def loadAccounts(file_name, n):
                     writer.writerow(line)
             break
 
+def getTopPlayers():
+    r = requests.get('https://app.wzstats.gg/player/top')
 
-loadAccounts("./config/accounts.csv", 2048)
+    return r.json()
+    
+# loadAccounts("./config/accounts.csv", 2048)
